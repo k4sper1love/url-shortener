@@ -33,3 +33,6 @@ go.work.sum
 
 # yaml config
 local.yaml
+
+# storage file
+storage.db
