@@ -5,3 +5,4 @@ http_server:
   read_timeout: 4s
   write_timeout: 4s
   idle_timeout: 60s
+  user: "username"

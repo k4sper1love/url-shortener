@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/k4sper1love/url-shortener/internal/config"
+	"github.com/k4sper1love/url-shortener/internal/http/handlers/url/redirect"
 	"github.com/k4sper1love/url-shortener/internal/http/handlers/url/save"
 	mwLogger "github.com/k4sper1love/url-shortener/internal/http/middleware/logger"
 	"github.com/k4sper1love/url-shortener/internal/lib/logger"
@@ -36,16 +37,24 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	router.Post("/url", save.New(log, storage))
+	router.Route("/url", func(r chi.Router) {
+		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
+			cfg.HTTPServer.User: cfg.HTTPServer.Password,
+		}))
+
+		r.Post("/", save.New(log, storage))
+	})
+
+	router.Get("/{alias}", redirect.New(log, storage))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
 	srv := &http.Server{
-		Addr: cfg.Address,
-		Handler: router,
-		ReadTimeout: cfg.HTTPServer.ReadTimeout,
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.HTTPServer.ReadTimeout,
 		WriteTimeout: cfg.HTTPServer.WriteTimeout,
-		IdleTimeout: cfg.HTTPServer.IdleTimeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
 
 	if err := srv.ListenAndServe(); err != nil {
